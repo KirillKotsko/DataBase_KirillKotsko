@@ -34,6 +34,8 @@ void help() {
 	printf("insert-s - add an entry to the school class table.\n");
 	printf("get-m - get information about student by id.\n");
 	printf("get-s - get information about school class by id.\n");
+	printf("ut-m - get information about all students.\n");
+	printf("ut-s - get information about all school class.\n");
 	printf("update-m - edit information about student.\n");
 	printf("update-s - edit information about school class.\n");
 	printf("del-m - delete information about student.\n");
@@ -223,6 +225,71 @@ void get_s() {
 		printf("Letter: %s\n", class_idx.letter);
 		printf("Classroom teacher surname: %s\n", class_idx.classroom_teacher_surname);
 	}
+	system("pause");
+}
+
+void ut_m() {
+	system("cls");
+
+	FILE* size_info = fopen("size_database.dat", "r+b");
+	struct Size_of_database info;
+	fread(&info, sizeof(struct Size_of_database), 1, size_info);
+	fclose(size_info);
+
+	FILE* data_file = fopen("pupil.fl", "r+b");
+	FILE* index_file = fopen("pupil.idx", "r+b");
+	for (int i = 0; i < info.ammount_of_pupil; i++) {
+		struct Index ids;
+		struct Pupil students;
+
+		fseek(index_file, i * (sizeof(struct Index)), 0);
+		fread(&ids, sizeof(struct Index), 1, index_file); 
+
+		fseek(data_file, ids.position * (sizeof(struct Pupil)), 0);
+		fread(&students, sizeof(struct Pupil), 1, data_file);
+
+		printf("%d :\n Student id: %d\n", ids.id, students.id);
+		printf("Name: %s\n", students.name);
+		printf("Surname: %s\n", students.surname);
+		printf("Age: %d\n", students.age);
+		printf("Average mark: %f\n", students.average_mark);
+		if (students.id_school_class == 0) printf("Student does not belong to any class yet.\n");
+		else printf("Student class id: %d\n", students.id_school_class);
+	}
+	fclose(data_file);
+	fclose(index_file);
+
+	system("pause");
+}
+
+void ut_s() {
+	system("cls");
+
+	FILE* size_info = fopen("size_database.dat", "r+b");
+	struct Size_of_database info;
+	fread(&info, sizeof(struct Size_of_database), 1, size_info);
+	fclose(size_info);
+
+	FILE* data_file = fopen("school_class.fl", "r+b");
+	FILE* index_file = fopen("school_class.idx", "r+b");
+	for (int i = 0; i < info.ammount_of_school; i++) {
+		struct Index ids;
+		struct School_class class_to_read;
+
+		fseek(index_file, i * (sizeof(struct Index)), 0);
+		fread(&ids, sizeof(struct Index), 1, index_file);
+
+		fseek(data_file, ids.position * (sizeof(struct School_class)), 0);
+		fread(&class_to_read, sizeof(struct School_class), 1, data_file);
+
+		printf("%d :\n School class id: %d\n", ids.id, class_to_read.id);
+		printf("Form: %d\n", class_to_read.form);
+		printf("Letter: %s\n", class_to_read.letter);
+		printf("Classroom teacher surname: %s\n", class_to_read.classroom_teacher_surname);
+	}
+	fclose(data_file);
+	fclose(index_file);
+
 	system("pause");
 }
 

@@ -20,6 +20,12 @@ int main()
 		else if (strcmp(command, "get-s") == 0) {
 			get_s();
 		}
+		else if (strcmp(command, "ut-m") == 0) {
+			ut_m();
+		}
+		else if (strcmp(command, "ut-s") == 0) {
+			ut_s();
+		}
 		else if (strcmp(command, "update-m") == 0) {
 			update_m();
 		}

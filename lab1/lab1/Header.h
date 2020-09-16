@@ -36,6 +36,8 @@ void insert_m();
 void insert_s();
 void get_m();
 void get_s();
+void ut_m();
+void ut_s();
 void update_m();
 void update_s();
 void del_m();
