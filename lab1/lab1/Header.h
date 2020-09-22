@@ -4,6 +4,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct list
+{
+	int id;
+	struct list* ptr; 
+};
+
+struct list* init_func();
+void add_to_func(int idx, struct list* root);
+void del_all_from(struct list* lst);
+struct list* deletelem(int idx, struct list* root);
+void show_all_student_in_class();
+
 struct Index {
 	int id;
 	int position;
@@ -14,6 +26,7 @@ struct School_class {
 	int form;
 	char letter[3];
 	char classroom_teacher_surname[20];
+	struct list* root;
 };
 
 struct Pupil {
@@ -35,6 +48,9 @@ struct Size_of_database {
 void insert_m();
 void insert_s();
 void get_m();
+void get_m_s(int idx);
+void get_all_students(struct list* lst);
+void del_m_by_id(int idx);
 void get_s();
 void ut_m();
 void ut_s();

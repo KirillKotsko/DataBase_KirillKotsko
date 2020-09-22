@@ -44,6 +44,9 @@ int main()
 		else if (strcmp(command, "help") == 0) {
 			help();
 		}
+		else if (strcmp(command, "get-a") == 0) {
+			show_all_student_in_class(); 
+		}
 		else if (strcmp(command, "exit") == 0) {
 			break;
 		}

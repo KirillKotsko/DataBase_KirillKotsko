@@ -34,6 +34,7 @@ void help() {
 	printf("insert-s - add an entry to the school class table.\n");
 	printf("get-m - get information about student by id.\n");
 	printf("get-s - get information about school class by id.\n");
+	printf("get-a - get all students from school class.\n");
 	printf("ut-m - get information about all students.\n");
 	printf("ut-s - get information about all school class.\n");
 	printf("update-m - edit information about student.\n");
@@ -65,30 +66,29 @@ void insert_m() {
 	struct Size_of_database info;
 	fread(&info, sizeof(struct Size_of_database), 1, size_info);
 
-	FILE* index_file = fopen("pupil.idx", "r+b");
-	FILE* data_file = fopen("pupil.fl", "r+b");
-	struct Index new_index;
-	new_index.id = info.new_index_pupil;
-	new_index.position = info.ammount_of_pupil;
-
-	struct Pupil new_pupil;
-	new_pupil.id = new_index.id;
-	printf("Enter student name: ");
-	scanf("%19s", &new_pupil.name);
-	printf("Enter student surname: ");
-	scanf("%19s", &new_pupil.surname);
-	printf("Enter student age: ");
-	scanf("%d", &new_pupil.age);
-	printf("Enter student average mark: ");
-	scanf("%f", &new_pupil.average_mark);
 	if (info.ammount_of_school == 0) {
-		printf("There is no class at school yet.\n");
-		new_pupil.id_school_class = 0;
+		printf("Closed!\n");
 	}
 	else {
+		FILE* index_file = fopen("pupil.idx", "r+b");
+		FILE* data_file = fopen("pupil.fl", "r+b");
+		struct Index new_index;
+		new_index.id = info.new_index_pupil;
+		new_index.position = info.ammount_of_pupil;
+
+		struct Pupil new_pupil;
+		new_pupil.id = new_index.id;
+		printf("Enter student name: ");
+		scanf("%19s", &new_pupil.name);
+		printf("Enter student surname: ");
+		scanf("%19s", &new_pupil.surname);
+		printf("Enter student age: ");
+		scanf("%d", &new_pupil.age);
+		printf("Enter student average mark: ");
+		scanf("%f", &new_pupil.average_mark);
 		FILE* class_list = fopen("school_class.fl", "r+b");
 		printf("You are given a sheet from school classes, choose from[1 - %d", info.ammount_of_school);
-		printf("] or [0] if there is no suitable one yet:\n");
+		printf("]:\n");
 		for (int i = 0; i < info.ammount_of_school; i++) {
 			fseek(class_list, i * (sizeof(struct School_class)), 0);
 			struct School_class list_of_class;
@@ -107,22 +107,25 @@ void insert_m() {
 			fseek(class_list, (idx - 1) * (sizeof(struct School_class)), 0);
 			fread(&choosen_class, sizeof(struct School_class), 1, class_list);
 			new_pupil.id_school_class = choosen_class.id;
+			add_to_func(new_pupil.id, choosen_class.root);
+			fseek(class_list, (idx - 1) * (sizeof(struct School_class)), 0);
+			fwrite(&choosen_class, sizeof(struct School_class), 1, class_list);
 		}
 		fclose(class_list);
+
+		fseek(index_file, info.ammount_of_pupil * (sizeof(struct Index)), 0);
+		fwrite(&new_index, sizeof(struct Index), 1, index_file);
+		fseek(data_file, new_index.position * (sizeof(struct Pupil)), 0);
+		fwrite(&new_pupil, sizeof(struct Pupil), 1, data_file);
+		fclose(data_file);
+		fclose(index_file);
+
+		printf("New student added. Id: %d\n", new_pupil.id);
+		info.ammount_of_pupil++;
+		info.new_index_pupil++;
+		fseek(size_info, 0, 0);
+		fwrite(&info, sizeof(struct Size_of_database), 1, size_info);
 	}
-
-	fseek(index_file, info.ammount_of_pupil * (sizeof(struct Index)), 0);
-	fwrite(&new_index, sizeof(struct Index), 1, index_file);
-	fseek(data_file, new_index.position * (sizeof(struct Pupil)), 0);
-	fwrite(&new_pupil, sizeof(struct Pupil), 1, data_file);
-	fclose(data_file);
-	fclose(index_file);
-
-	printf("New student added. Id: %d\n", new_pupil.id);
-	info.ammount_of_pupil++;
-	info.new_index_pupil++;
-	fseek(size_info, 0, 0);
-	fwrite(&info, sizeof(struct Size_of_database), 1, size_info);
 	fclose(size_info);
 	system("pause");
 }
@@ -148,6 +151,7 @@ void insert_s() {
 	scanf("%s", &new_school.letter);
 	printf("Enter classroom teacher surname: ");
 	scanf("%s", &new_school.classroom_teacher_surname);
+	new_school.root = init_func();
 
 	fseek(index_file, info.ammount_of_school * (sizeof(struct Index)), 0);
 	fwrite(&new_index, sizeof(struct Index), 1, index_file);
@@ -192,8 +196,7 @@ void get_m() {
 		printf("Surname: %s\n", student.surname);
 		printf("Age: %d\n", student.age);
 		printf("Average mark: %f\n", student.average_mark);
-		if (student.id_school_class == 0) printf("Student does not belong to any class yet.\n");
-		else printf("Student class id: %d\n", student.id_school_class);
+		printf("Student class id: %d\n", student.id_school_class);
 	}
 	system("pause");
 }
@@ -253,8 +256,7 @@ void ut_m() {
 		printf("Surname: %s\n", students.surname);
 		printf("Age: %d\n", students.age);
 		printf("Average mark: %f\n", students.average_mark);
-		if (students.id_school_class == 0) printf("Student does not belong to any class yet.\n");
-		else printf("Student class id: %d\n", students.id_school_class);
+		printf("Student class id: %d\n", students.id_school_class);
 	}
 	fclose(data_file);
 	fclose(index_file);
@@ -319,11 +321,10 @@ void update_m() {
 		printf("Surname: %s\n", student.surname);
 		printf("Age: %d\n", student.age);
 		printf("Average mark: %f\n", student.average_mark);
-		if (student.id_school_class == 0) printf("Student does not belong to any class yet.\n");
-		else printf("Student class id: %d\n", student.id_school_class);
+		printf("Student class id: %d\n", student.id_school_class);
 
 		int choice;
-		printf("What would you like to change? 1 - Name, 2 - Surname, 3 - Age, 4 - Average mark, 5 - Student class id, 0 - nothing.\n Enter: ");
+		printf("What would you like to change? 1 - Name, 2 - Surname, 3 - Age, 4 - Average mark, 0 - nothing.\n Enter: ");
 		scanf("%d", &choice);
 		if (choice == 1) {
 			printf("Enter name: ");
@@ -338,38 +339,7 @@ void update_m() {
 		} else if (choice == 4) {
 			printf("Enter average mark: ");
 			scanf("%f", &student.average_mark);
-		} else if (choice == 5) {
-			if (info.ammount_of_school == 0) {
-				printf("There is no class at school yet.\n");
-				student.id_school_class = 0;
-			}
-			else {
-				FILE* class_list = fopen("school_class.fl", "r+b");
-				printf("You are given a sheet from school classes, choose from[1 - %d", info.ammount_of_school);
-				printf("] or [0] if there is no suitable one yet:\n");
-				for (int i = 0; i < info.ammount_of_school; i++) {
-					fseek(class_list, i * (sizeof(struct School_class)), 0);
-					struct School_class list_of_class;
-					fread(&list_of_class, sizeof(struct School_class), 1, class_list);
-					printf("%d", i + 1);
-					printf(". (%d-%s) Classroom teacher: %s\n", list_of_class.form, list_of_class.letter, list_of_class.classroom_teacher_surname);
-				}
-				printf("Enter: ");
-				int num;
-				scanf("%d", &num);
-				if (num == 0) {
-					student.id_school_class = 0;
-				}
-				else {
-					struct School_class choosen_class;
-					fseek(class_list, (num - 1) * (sizeof(struct School_class)), 0);
-					fread(&choosen_class, sizeof(struct School_class), 1, class_list);
-					student.id_school_class = choosen_class.id;
-				}
-				fclose(class_list);
-			}
-		}
-
+		} 
 		fseek(data_file, pos * (sizeof(struct Pupil)), 0);
 		fwrite(&student, sizeof(struct Pupil), 1, data_file);
 		fclose(data_file);
@@ -455,14 +425,25 @@ void del_m() {
 		printf("Surname: %s\n", student.surname);
 		printf("Age: %d\n", student.age);
 		printf("Average mark: %f\n", student.average_mark);
-		if (student.id_school_class == 0) printf("Student does not belong to any class yet.\n");
-		else printf("Student class id: %d\n", student.id_school_class);
+		printf("Student class id: %d\n", student.id_school_class);
 
 		int choice;
 		printf("Do you sure want to delete this one (yes - 1/no - 0)? ");
 		scanf("%d", &choice);
 
 		if (choice == 1) {
+			const char file_name[30] = "school_class.idx";
+			int pos1 = binary_search_index_pos(file_name, idx, info.ammount_of_school - 1);
+			struct School_class class_idx;
+			FILE* data_file1 = fopen("school_class.fl", "r+b");
+			fseek(data_file1, pos1 * (sizeof(struct School_class)), 0);
+			fread(&class_idx, sizeof(struct School_class), 1, data_file1);
+			struct list* a = deletelem(student.id, class_idx.root);
+			class_idx.root = a;
+			fseek(data_file1, pos1 * (sizeof(struct School_class)), 0);
+			fwrite(&class_idx, sizeof(struct School_class), 1, data_file1);
+			fclose(data_file1);
+
 			struct Pupil transfer;
 
 			fseek(data_file, (info.ammount_of_pupil - 1) * (sizeof(struct Pupil)), 0);
@@ -511,7 +492,10 @@ void del_s() {
 	scanf("%d", &idx);
 	int pos = binary_search_index_pos(file_name, idx, info.ammount_of_school - 1);
 
-	if (pos == -1) printf("There are no records in the database with this id.\n");
+	if (pos == -1) {
+		printf("There are no records in the database with this id.\n");
+		fclose(size_info);
+	}
 	else {
 		struct School_class class_idx;
 		FILE* data_file = fopen("school_class.fl", "r+b");
@@ -554,24 +538,180 @@ void del_s() {
 			fseek(size_info, 0, 0);
 			fwrite(&info, sizeof(struct Size_of_database), 1, size_info);
 			fclose(ix_file);
-
-			FILE* data_pup_file = fopen("pupil.fl", "r+b");
-			for (int i = 0; i < info.ammount_of_pupil; i++) {
-				struct Pupil student_auto_change;
-				fseek(data_pup_file, i * (sizeof(struct Pupil)), 0);
-				fread(&student_auto_change, sizeof(struct Pupil), 1, data_pup_file);
-
-				if (student_auto_change.id_school_class == idx) {
-					student_auto_change.id_school_class = 0;
-					fseek(data_pup_file, i * (sizeof(struct Pupil)), 0);
-					fwrite(&student_auto_change, sizeof(struct Pupil), 1, data_pup_file);
-				}
-			}
-			fclose(data_pup_file);
-		}
+			fclose(size_info);
+			del_all_from(class_idx.root);
+		} else fclose(size_info);
 		fclose(data_file);
 	}
 	printf("Successfully!\n");
-	fclose(size_info);
 	system("pause");
+}
+
+struct list* init_func()
+{
+	struct list* lst;
+	lst = (struct list*)malloc(sizeof(struct list));
+	lst->id = 0;
+	lst->ptr = NULL;
+	return(lst);
+}
+
+void add_to_func(int idx, struct list* root)
+{
+	struct list* lst;
+	lst = root;
+	if (lst->id == 0) lst->id = idx;
+	else {
+		struct list* temp;
+		temp = (struct list*)malloc(sizeof(struct list));
+		temp->id = idx;
+		temp->ptr = NULL;
+		while (lst->ptr != NULL)
+		{
+			lst = lst->ptr;
+		}
+		lst->ptr = temp;
+	}
+}
+
+void del_all_from(struct list* lst)
+{
+	struct list* p;
+	p = lst;
+	do {
+		del_m_by_id(p->id);
+		p = p->ptr;
+	} while (p != NULL);
+}
+
+void get_all_students(struct list* lst) {
+	struct list* p;
+	p = lst;
+	printf("Students: \n");
+	do {
+		if (p->id == 0) printf("No students in class. \n");
+		else get_m_s(p->id);
+		p = p->ptr;
+	} while (p != NULL);
+}
+
+struct list* deletelem(int idx, struct list* root) {
+	struct list* temp;
+	temp = root;
+	if (temp->id == idx) {
+		temp = root->ptr;
+		if (root->ptr == NULL) {
+			struct list* lst;
+			lst = (struct list*)malloc(sizeof(struct list));
+			lst->id = 0;
+			lst->ptr = NULL;
+			return lst;
+		}
+		free(root);
+		return temp;
+	}
+	else {
+		struct list* lst;
+		while ((temp->ptr)->id != idx) temp = temp->ptr;
+		lst = temp->ptr;
+		temp->ptr = lst->ptr;
+		free(lst);
+		return root;
+	}
+}
+
+void del_m_by_id(int idx) {
+	FILE* size_info = fopen("size_database.dat", "r+b");
+	struct Size_of_database info;
+	fread(&info, sizeof(struct Size_of_database), 1, size_info);
+
+	const char file_name[30] = "pupil.idx";
+	int pos = binary_search_index_pos(file_name, idx, info.ammount_of_pupil - 1);
+
+	FILE* data_file = fopen("pupil.fl", "r+b");
+	struct Pupil transfer;
+
+	fseek(data_file, (info.ammount_of_pupil - 1) * (sizeof(struct Pupil)), 0);
+	fread(&transfer, sizeof(struct Pupil), 1, data_file);
+	fseek(data_file, pos * (sizeof(struct Pupil)), 0);
+	fwrite(&transfer, sizeof(struct Pupil), 1, data_file);
+
+	FILE* index_file = fopen("pupil.idx", "r+b");
+	for (int i = 0; i < info.ammount_of_pupil; i++) {
+		struct Index indx_transfer;
+		fseek(index_file, i * (sizeof(struct Index)), 0);
+		fread(&indx_transfer, sizeof(struct Index), 1, index_file);
+
+		if (indx_transfer.id == transfer.id) indx_transfer.position = pos;
+		if (indx_transfer.id > idx) {
+			fseek(index_file, (i - 1) * (sizeof(struct Index)), 0);
+			fwrite(&indx_transfer, sizeof(struct Index), 1, index_file);
+		}
+		else {
+			fseek(index_file, i * (sizeof(struct Index)), 0);
+			fwrite(&indx_transfer, sizeof(struct Index), 1, index_file);
+		}
+	}
+	info.ammount_of_pupil--;
+	fseek(size_info, 0, 0);
+	fwrite(&info, sizeof(struct Size_of_database), 1, size_info);
+	fclose(index_file);
+    fclose(data_file);
+	fclose(size_info);
+}
+
+void show_all_student_in_class() {
+	system("cls");
+
+	FILE* size_info = fopen("size_database.dat", "r+b");
+	struct Size_of_database info;
+	fread(&info, sizeof(struct Size_of_database), 1, size_info);
+	fclose(size_info);
+
+	int idx;
+	const char file_name[30] = "school_class.idx";
+	printf("Enter id: ");
+	scanf("%d", &idx);
+	int pos = binary_search_index_pos(file_name, idx, info.ammount_of_school - 1);
+
+	if (pos == -1) printf("There are no records in the database with this id.\n");
+	else {
+		struct School_class class_idx;
+		FILE* data_file = fopen("school_class.fl", "r+b");
+		fseek(data_file, pos * (sizeof(struct School_class)), 0);
+		fread(&class_idx, sizeof(struct School_class), 1, data_file);
+		fclose(data_file);
+
+		printf("School class id: %d\n", class_idx.id);
+		printf("Form: %d\n", class_idx.form);
+		printf("Letter: %s\n", class_idx.letter);
+		printf("Classroom teacher surname: %s\n", class_idx.classroom_teacher_surname);
+
+		get_all_students(class_idx.root);
+	}
+	system("pause");
+}
+
+void get_m_s(int idx) {
+	FILE* size_info = fopen("size_database.dat", "r+b");
+	struct Size_of_database info;
+	fread(&info, sizeof(struct Size_of_database), 1, size_info);
+	fclose(size_info);
+
+	const char file_name[30] = "pupil.idx";
+	int pos = binary_search_index_pos(file_name, idx, info.ammount_of_pupil - 1);
+
+	struct Pupil student;
+	FILE* data_file = fopen("pupil.fl", "r+b");
+	fseek(data_file, pos * (sizeof(struct Pupil)), 0);
+	fread(&student, sizeof(struct Pupil), 1, data_file);
+	fclose(data_file);
+
+	printf("Student id: %d\n", student.id);
+	printf("Name: %s\n", student.name);
+	printf("Surname: %s\n", student.surname);
+	printf("Age: %d\n", student.age);
+	printf("Average mark: %f\n", student.average_mark);
+	printf("Student class id: %d\n", student.id_school_class);
+	printf("\n");
 }
